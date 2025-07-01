@@ -46,18 +46,60 @@ jobs:
       # --- STAGE & COPY ---
       - name: Stage and Copy Car Service JAR
         run: cp Assignment/CarService/target/*.jar ./car-service.jar
+      - name: Copy Car Service JAR to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: ./car-service.jar
+          target: /home/${{ secrets.VPS_USER }}/spring-app/upload/car-service/
       
       - name: Stage and Copy Customer Service JAR
         run: cp Assignment/CustomerService/target/*.jar ./customer-service.jar
+      - name: Copy Customer Service JAR to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: ./customer-service.jar
+          target: /home/${{ secrets.VPS_USER }}/spring-app/upload/customer-service/
       
       - name: Stage and Copy Discovery Service JAR
         run: cp Assignment/DiscoveryService/target/*.jar ./discovery-service.jar
+      - name: Copy Discovery Service JAR to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: ./discovery-service.jar
+          target: /home/${{ secrets.VPS_USER }}/spring-app/upload/discovery-service/
       
       - name: Stage and Copy Gateway Service JAR
         run: cp Assignment/SpringCloudGateway/target/*.jar ./gateway-service.jar
+      - name: Stage and Copy Gateway Service JAR
+        run: cp assignment2/gateway-service/target/*.jar ./gateway-service.jar
+      - name: Copy Gateway Service JAR to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: ./gateway-service.jar
+          target: /home/${{ secrets.VPS_USER }}/spring-app/upload/gateway-service/
       
       - name: Stage and Copy Renting Service JAR
         run: cp Assignment/RentingService/target/*.jar ./renting-service.jar
+      - name: Copy Renting Service JAR to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: ./renting-service.jar
+          target: /home/${{ secrets.VPS_USER }}/spring-app/upload/renting-service/
 
       # --- DEPLOY ---
       - name: Deploy and Restart Discovery Service
