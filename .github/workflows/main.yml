@@ -1,0 +1,325 @@
+name: Deploy to VPS 
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Assignment/**'
+      - '.github/workflows/main.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # --- BUILD ---
+      - name: Build Car Service
+        working-directory: Assignment/CarService
+        run: mvn clean package -DskipTests
+
+      - name: Build Customer Service
+        working-directory: Assignment/CustomerService
+        run: mvn clean package -DskipTests
+
+      - name: Build Discovery Service
+        working-directory: Assignment/DiscoveryService
+        run: mvn clean package -DskipTests
+
+      - name: Build Gateway Service
+        working-directory: Assignment/SpringCloudGateway
+        run: mvn clean package -DskipTests
+
+      - name: Build Renting Service
+        working-directory: Assignment/RentingService
+        run: mvn clean package -DskipTests
+
+      # --- STAGE & COPY ---
+      - name: Stage and Copy Car Service JAR
+        run: cp Assignment/CarService/target/*.jar ./car-service.jar
+      
+      - name: Stage and Copy Customer Service JAR
+        run: cp Assignment/CustomerService/target/*.jar ./customer-service.jar
+      
+      - name: Stage and Copy Discovery Service JAR
+        run: cp Assignment/DiscoveryService/target/*.jar ./discovery-service.jar
+      
+      - name: Stage and Copy Gateway Service JAR
+        run: cp Assignment/SpringCloudGateway/target/*.jar ./gateway-service.jar
+      
+      - name: Stage and Copy Renting Service JAR
+        run: cp Assignment/RentingService/target/*.jar ./renting-service.jar
+
+      # --- DEPLOY ---
+      - name: Deploy and Restart Discovery Service
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            SERVICE_NAME="discovery-service"
+            USER="${{ secrets.VPS_USER }}"
+            DEPLOY_DIR="/opt/$SERVICE_NAME"
+            UPLOAD_DIR="/home/$USER/spring-app/upload/$SERVICE_NAME"
+            JAR_NAME="$SERVICE_NAME.jar"
+            SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+
+            echo "--- Deploying $SERVICE_NAME ---"
+            sudo mkdir -p $DEPLOY_DIR
+            if [ ! -f "$SERVICE_FILE" ]; then
+              echo "⚙️ Creating new $SERVICE_NAME.service"
+              echo "[Unit]
+            Description=Spring Boot Service - $SERVICE_NAME
+            After=network.target
+            [Service]
+            User=$USER
+            ExecStart=/usr/bin/java -jar $DEPLOY_DIR/$JAR_NAME
+            Restart=always
+            [Install]
+            WantedBy=multi-user.target" | sudo tee $SERVICE_FILE > /dev/null
+              sudo systemctl daemon-reload
+              sudo systemctl enable $SERVICE_NAME
+            fi
+            LATEST_UPLOADED_JAR=$(ls -t "$UPLOAD_DIR"/*.jar 2>/dev/null | head -n 1)
+            if [ -n "$LATEST_UPLOADED_JAR" ]; then
+              echo "🛑 Stopping service $SERVICE_NAME..."
+              sudo systemctl stop $SERVICE_NAME || true
+              echo "📦 Copying new JAR to $DEPLOY_DIR/$JAR_NAME..."
+              sudo cp "$LATEST_UPLOADED_JAR" "$DEPLOY_DIR/$JAR_NAME"
+              echo "🚀 Starting service $SERVICE_NAME..."
+              sudo systemctl start $SERVICE_NAME
+              echo "✅ Deployment for $SERVICE_NAME successful!"
+            else
+              echo "⚠️ No new JAR file found for $SERVICE_NAME. Skipping deployment."
+            fi
+      
+      - name: Deploy and Restart Car Service
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            SERVICE_NAME="car-service"
+            USER="${{ secrets.VPS_USER }}"
+            DEPLOY_DIR="/opt/$SERVICE_NAME"
+            UPLOAD_DIR="/home/$USER/spring-app/upload/$SERVICE_NAME"
+            JAR_NAME="$SERVICE_NAME.jar"
+            SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+
+            echo "--- Deploying $SERVICE_NAME ---"
+            sudo mkdir -p $DEPLOY_DIR
+            if [ ! -f "$SERVICE_FILE" ]; then
+              echo "⚙️ Creating new $SERVICE_NAME.service"
+              echo "[Unit]
+            Description=Spring Boot Service - $SERVICE_NAME
+            After=network.target
+            [Service]
+            User=$USER
+            ExecStart=/usr/bin/java -jar $DEPLOY_DIR/$JAR_NAME
+            Restart=always
+            [Install]
+            WantedBy=multi-user.target" | sudo tee $SERVICE_FILE > /dev/null
+              sudo systemctl daemon-reload
+              sudo systemctl enable $SERVICE_NAME
+            fi
+            LATEST_UPLOADED_JAR=$(ls -t "$UPLOAD_DIR"/*.jar 2>/dev/null | head -n 1)
+            if [ -n "$LATEST_UPLOADED_JAR" ]; then
+              echo "🛑 Stopping service $SERVICE_NAME..."
+              sudo systemctl stop $SERVICE_NAME || true
+              echo "📦 Copying new JAR to $DEPLOY_DIR/$JAR_NAME..."
+              sudo cp "$LATEST_UPLOADED_JAR" "$DEPLOY_DIR/$JAR_NAME"
+              echo "🚀 Starting service $SERVICE_NAME..."
+              sudo systemctl start $SERVICE_NAME
+              echo "✅ Deployment for $SERVICE_NAME successful!"
+            else
+              echo "⚠️ No new JAR file found for $SERVICE_NAME. Skipping deployment."
+            fi
+            
+      - name: Deploy and Restart Customer Service
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            SERVICE_NAME="customer-service"
+            USER="${{ secrets.VPS_USER }}"
+            DEPLOY_DIR="/opt/$SERVICE_NAME"
+            UPLOAD_DIR="/home/$USER/spring-app/upload/$SERVICE_NAME"
+            JAR_NAME="$SERVICE_NAME.jar"
+            SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+
+            echo "--- Deploying $SERVICE_NAME ---"
+            sudo mkdir -p $DEPLOY_DIR
+            if [ ! -f "$SERVICE_FILE" ]; then
+              echo "⚙️ Creating new $SERVICE_NAME.service"
+              echo "[Unit]
+            Description=Spring Boot Service - $SERVICE_NAME
+            After=network.target
+            [Service]
+            User=$USER
+            ExecStart=/usr/bin/java -jar $DEPLOY_DIR/$JAR_NAME
+            Restart=always
+            [Install]
+            WantedBy=multi-user.target" | sudo tee $SERVICE_FILE > /dev/null
+              sudo systemctl daemon-reload
+              sudo systemctl enable $SERVICE_NAME
+            fi
+            LATEST_UPLOADED_JAR=$(ls -t "$UPLOAD_DIR"/*.jar 2>/dev/null | head -n 1)
+            if [ -n "$LATEST_UPLOADED_JAR" ]; then
+              echo "🛑 Stopping service $SERVICE_NAME..."
+              sudo systemctl stop $SERVICE_NAME || true
+              echo "📦 Copying new JAR to $DEPLOY_DIR/$JAR_NAME..."
+              sudo cp "$LATEST_UPLOADED_JAR" "$DEPLOY_DIR/$JAR_NAME"
+              echo "🚀 Starting service $SERVICE_NAME..."
+              sudo systemctl start $SERVICE_NAME
+              echo "✅ Deployment for $SERVICE_NAME successful!"
+            else
+              echo "⚠️ No new JAR file found for $SERVICE_NAME. Skipping deployment."
+            fi
+
+      - name: Deploy and Restart Renting Service
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            SERVICE_NAME="renting-service"
+            USER="${{ secrets.VPS_USER }}"
+            DEPLOY_DIR="/opt/$SERVICE_NAME"
+            UPLOAD_DIR="/home/$USER/spring-app/upload/$SERVICE_NAME"
+            JAR_NAME="$SERVICE_NAME.jar"
+            SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+
+            echo "--- Deploying $SERVICE_NAME ---"
+            sudo mkdir -p $DEPLOY_DIR
+            if [ ! -f "$SERVICE_FILE" ]; then
+              echo "⚙️ Creating new $SERVICE_NAME.service"
+              echo "[Unit]
+            Description=Spring Boot Service - $SERVICE_NAME
+            After=network.target
+            [Service]
+            User=$USER
+            ExecStart=/usr/bin/java -jar $DEPLOY_DIR/$JAR_NAME
+            Restart=always
+            [Install]
+            WantedBy=multi-user.target" | sudo tee $SERVICE_FILE > /dev/null
+              sudo systemctl daemon-reload
+              sudo systemctl enable $SERVICE_NAME
+            fi
+            LATEST_UPLOADED_JAR=$(ls -t "$UPLOAD_DIR"/*.jar 2>/dev/null | head -n 1)
+            if [ -n "$LATEST_UPLOADED_JAR" ]; then
+              echo "🛑 Stopping service $SERVICE_NAME..."
+              sudo systemctl stop $SERVICE_NAME || true
+              echo "📦 Copying new JAR to $DEPLOY_DIR/$JAR_NAME..."
+              sudo cp "$LATEST_UPLOADED_JAR" "$DEPLOY_DIR/$JAR_NAME"
+              echo "🚀 Starting service $SERVICE_NAME..."
+              sudo systemctl start $SERVICE_NAME
+              echo "✅ Deployment for $SERVICE_NAME successful!"
+            else
+              echo "⚠️ No new JAR file found for $SERVICE_NAME. Skipping deployment."
+            fi
+
+      - name: Deploy and Restart Gateway Service
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            SERVICE_NAME="gateway-service"
+            USER="${{ secrets.VPS_USER }}"
+            DEPLOY_DIR="/opt/$SERVICE_NAME"
+            UPLOAD_DIR="/home/$USER/spring-app/upload/$SERVICE_NAME"
+            JAR_NAME="$SERVICE_NAME.jar"
+            SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+
+            echo "--- Deploying $SERVICE_NAME ---"
+            sudo mkdir -p $DEPLOY_DIR
+            if [ ! -f "$SERVICE_FILE" ]; then
+              echo "⚙️ Creating new $SERVICE_NAME.service"
+              echo "[Unit]
+            Description=Spring Boot Service - $SERVICE_NAME
+            After=network.target
+            [Service]
+            User=$USER
+            ExecStart=/usr/bin/java -jar $DEPLOY_DIR/$JAR_NAME
+            Restart=always
+            [Install]
+            WantedBy=multi-user.target" | sudo tee $SERVICE_FILE > /dev/null
+              sudo systemctl daemon-reload
+              sudo systemctl enable $SERVICE_NAME
+            fi
+            LATEST_UPLOADED_JAR=$(ls -t "$UPLOAD_DIR"/*.jar 2>/dev/null | head -n 1)
+            if [ -n "$LATEST_UPLOADED_JAR" ]; then
+              echo "🛑 Stopping service $SERVICE_NAME..."
+              sudo systemctl stop $SERVICE_NAME || true
+              echo "📦 Copying new JAR to $DEPLOY_DIR/$JAR_NAME..."
+              sudo cp "$LATEST_UPLOADED_JAR" "$DEPLOY_DIR/$JAR_NAME"
+              echo "🚀 Starting service $SERVICE_NAME..."
+              sudo systemctl start $SERVICE_NAME
+              echo "✅ Deployment for $SERVICE_NAME successful!"
+            else
+              echo "⚠️ No new JAR file found for $SERVICE_NAME. Skipping deployment."
+            fi
+
+      - name: Deploy and Restart Customer Service
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            SERVICE_NAME="customer-service"
+            USER="${{ secrets.VPS_USER }}"
+            DEPLOY_DIR="/opt/$SERVICE_NAME"
+            UPLOAD_DIR="/home/$USER/spring-app/upload/$SERVICE_NAME"
+            JAR_NAME="$SERVICE_NAME.jar"
+            SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME.service"
+
+            echo "--- Deploying $SERVICE_NAME ---"
+            sudo mkdir -p $DEPLOY_DIR
+            if [ ! -f "$SERVICE_FILE" ]; then
+              echo "⚙️ Creating new $SERVICE_NAME.service"
+              echo "[Unit]
+            Description=Spring Boot Service - $SERVICE_NAME
+            After=network.target
+            [Service]
+            User=$USER
+            ExecStart=/usr/bin/java -jar $DEPLOY_DIR/$JAR_NAME
+            Restart=always
+            [Install]
+            WantedBy=multi-user.target" | sudo tee $SERVICE_FILE > /dev/null
+              sudo systemctl daemon-reload
+              sudo systemctl enable $SERVICE_NAME
+            fi
+            LATEST_UPLOADED_JAR=$(ls -t "$UPLOAD_DIR"/*.jar 2>/dev/null | head -n 1)
+            if [ -n "$LATEST_UPLOADED_JAR" ]; then
+              echo "🛑 Stopping service $SERVICE_NAME..."
+              sudo systemctl stop $SERVICE_NAME || true
+              echo "📦 Copying new JAR to $DEPLOY_DIR/$JAR_NAME..."
+              sudo cp "$LATEST_UPLOADED_JAR" "$DEPLOY_DIR/$JAR_NAME"
+              echo "🚀 Starting service $SERVICE_NAME..."
+              sudo systemctl start $SERVICE_NAME
+              echo "✅ Deployment for $SERVICE_NAME successful!"
+            else
+              echo "⚠️ No new JAR file found for $SERVICE_NAME. Skipping deployment."
+            fi
