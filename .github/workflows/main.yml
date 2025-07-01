@@ -79,8 +79,6 @@ jobs:
       
       - name: Stage and Copy Gateway Service JAR
         run: cp Assignment/SpringCloudGateway/target/*.jar ./gateway-service.jar
-      - name: Stage and Copy Gateway Service JAR
-        run: cp assignment2/gateway-service/target/*.jar ./gateway-service.jar
       - name: Copy Gateway Service JAR to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
